@@ -20,9 +20,29 @@ const app = express();
 app.use(helmet());
 
 // ─── CORS ─────────────────────────────────────
+// app.use(cors({
+//   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization'],
+// }));
+const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
+  origin: (origin, callback) => {
+    // 1. Allow internal requests (like Postman or server-to-server)
+    if (!origin) return callback(null, true);
+
+    // 2. Check if the .env says "*" or if the specific URL is in our list
+    const isAllowed = allowedOrigins.includes('*') || allowedOrigins.includes(origin);
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS policy'));
+    }
+  },
+  credentials: true, // Required since you are using JWTs
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
